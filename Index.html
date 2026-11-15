@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Ninja Fruit Slashers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Plus+Jakarta+Sans:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#140b0b;--red:#c1272d;--gold:#e6b422;--paper:#f3e9d2;--wood:#2a1810;--muted:#bfae95}
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--ink);color:var(--paper);font-family:'Plus Jakarta Sans',system-ui,sans-serif;touch-action:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none}
+.hidden{display:none!important}
+button{font-family:inherit;font-weight:800;cursor:pointer;touch-action:manipulation;color:inherit}
+
+/* HUD */
+#hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:max(10px,env(safe-area-inset-top)) 12px 0;pointer-events:none;z-index:10}
+.panel{background:rgba(20,11,11,.86);border:2px solid var(--gold);border-radius:6px;padding:8px 12px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+.score{display:flex;align-items:center;gap:6px;color:var(--gold);font-size:clamp(1.3rem,4vw,1.8rem);font-weight:800;line-height:1}
+.best{color:var(--muted);font-size:.72rem;font-weight:700;margin-top:3px}
+.badge{display:inline-block;margin-top:4px;padding:1px 8px;border:1px solid currentColor;border-radius:3px;font-size:.62rem;font-weight:800;letter-spacing:.5px}
+.exp{margin-top:6px;padding-top:5px;border-top:1px solid rgba(243,233,210,.18);min-width:clamp(150px,36vw,200px)}
+.exp-h{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:.68rem;font-weight:800;margin-bottom:4px}
+.bar{height:7px;background:#000;border:1px solid rgba(230,180,34,.35);border-radius:2px;overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#3f7d4e,#8bd17c);transition:width .2s}
+.bar>i.buff{background:linear-gradient(90deg,var(--gold),var(--red))}
+.bar>i.diamond-exp{background:linear-gradient(90deg,#0077b6,#4fc3f7,#b3e5fc);box-shadow:0 0 10px rgba(79,195,247,.75)}
+.exp-h.diamond-txt{color:#7fd8ff;text-shadow:0 0 8px rgba(79,195,247,.65)}
+.buff-tag{background:var(--gold);color:var(--ink);padding:1px 6px;border-radius:3px;font-size:.6rem;animation:pulse .6s infinite alternate}
+@keyframes pulse{to{transform:scale(1.07)}}
+.right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.pill{display:inline-flex;align-items:center;gap:4px;background:rgba(20,11,11,.88);border:2px solid var(--gold);color:var(--gold);padding:5px 10px;border-radius:4px;font-size:.78rem;font-weight:800}
+.hud-btn{pointer-events:auto;height:34px;padding:0 10px;background:rgba(20,11,11,.9);border:2px solid var(--gold);border-radius:4px;color:var(--gold);font-size:.74rem;display:inline-flex;align-items:center;gap:4px}
+.hud-btn:active{transform:scale(.94)}
+#lives{display:flex;gap:3px;background:rgba(20,11,11,.88);border:2px solid rgba(243,233,210,.25);border-radius:4px;padding:5px 9px}
+#lives span{color:var(--red);font-size:1.1rem;line-height:1;transition:.25s}
+#lives span.lost{color:#555;opacity:.4;transform:scale(.8)}
+#toasts{position:fixed;top:112px;left:50%;transform:translateX(-50%);z-index:45;display:flex;flex-direction:column;gap:6px;width:92%;max-width:370px;pointer-events:none}
+.toast{display:flex;justify-content:space-between;gap:8px;background:var(--wood);border:2px solid var(--gold);border-left:6px solid var(--red);color:var(--paper);padding:8px 12px;border-radius:4px;font-size:.78rem;font-weight:800;animation:tin .25s,tout .4s 2.6s forwards}
+@keyframes tin{from{opacity:0;transform:translateY(-14px)}}
+@keyframes tout{to{opacity:0;transform:translateY(-8px)}}
+
+.skill{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:12;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:0;--p:100}
+.orb{position:relative;width:78px;height:78px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#ffd700 calc(var(--p)*1%),rgba(255,215,0,.18) 0);box-shadow:0 0 16px rgba(255,200,0,.55)}
+.orb::before{content:"";position:absolute;inset:6px;border-radius:50%;background:radial-gradient(circle,#4a1a14,#150a0a);border:2px solid #000}
+.orb svg{position:relative;width:54px;height:54px}
+.skill small{font-size:.72rem;color:#ffe9a8;font-weight:800;text-shadow:0 2px 4px #000}
+.skill:active .orb{transform:scale(.94)}
+.skill.cd .orb{box-shadow:none;filter:brightness(.75)}
+.skill.on .orb{animation:spin 1s linear infinite;box-shadow:0 0 26px #ffd700}
+.skill.on svg{animation:spin 1s linear infinite reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Overlay & kartu */
+.ov{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto;touch-action:auto;background:radial-gradient(circle at 50% 30%,rgba(60,20,16,.8),rgba(10,5,5,.95))}
+.ov.modal{z-index:65;background:rgba(10,5,5,.9)}
+.card{width:100%;max-width:460px;max-height:96dvh;overflow:auto;padding:clamp(14px,3vw,20px);background:linear-gradient(160deg,#2f1c15,#170d0a);border:2px solid var(--gold);outline:1px solid rgba(230,180,34,.4);outline-offset:4px;border-radius:6px;box-shadow:0 24px 60px rgba(0,0,0,.85)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:4px;font-size:.74rem;border:2px solid var(--gold);background:rgba(0,0,0,.5);color:var(--gold)}
+.chip.red{background:var(--red);border-color:#f0a07a;color:var(--paper)}
+.chip.green{background:#2e6b3f;border-color:#8bd17c;color:var(--paper)}
+.chip.blue{background:#1b4965;border-color:#7fd8ff;color:var(--paper)}
+.seal{width:54px;height:54px;margin:0 auto 6px;display:grid;place-items:center;background:var(--red);border:3px solid var(--gold);border-radius:50%;font-size:1.9rem;color:var(--paper);transform:rotate(-6deg);box-shadow:0 4px 14px rgba(193,39,45,.5)}
+h1,h2{font-family:'Cinzel Decorative',Georgia,serif;text-align:center;font-weight:900;line-height:1.1;color:var(--gold);font-size:clamp(1.45rem,5.2vw,2.1rem);text-shadow:0 3px 0 #000}
+.blade{position:relative;height:3px;margin:10px 18px;background:linear-gradient(90deg,transparent,#fff 15%,#9fb3bd 85%,transparent)}
+.blade::before{content:"";position:absolute;left:50%;top:-4px;width:11px;height:11px;background:var(--red);border:2px solid var(--gold);transform:translateX(-50%) rotate(45deg)}
+.sub{text-align:center;font-size:.78rem;color:var(--muted);line-height:1.35;margin-bottom:10px}
+.h3{color:var(--gold);font-size:.76rem;font-weight:800;margin-bottom:6px}
+
+/* Tombol pilih mode */
+.modes{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:8px;margin-bottom:12px}
+.mode{display:flex;flex-direction:column;justify-content:space-between;gap:5px;text-align:left;min-width:0;padding:9px 10px;background:rgba(0,0,0,.45);border:2px solid rgba(243,233,210,.18);border-radius:4px;position:relative;color:var(--paper)}
+.mode:hover{border-color:var(--gold)}
+.xp{position:absolute;top:-9px;right:-3px;padding:1px 7px;background:#140b0b;border:1px solid var(--gold);border-radius:4px;color:#ffd700;font-size:.66rem;font-weight:800;text-shadow:0 0 6px #ff9e00;box-shadow:0 0 8px rgba(255,200,0,.5);animation:wiggle .5s ease-in-out infinite alternate}
+@keyframes wiggle{from{transform:translateX(-3px) rotate(-5deg)}to{transform:translateX(3px) rotate(5deg)}}
+.mode.on{border-color:var(--gold);background:linear-gradient(145deg,rgba(193,39,45,.4),rgba(230,180,34,.16));box-shadow:0 0 14px rgba(230,180,34,.3)}
+.mode b{font-size:.92rem}
+.mode em{font-style:normal;font-size:.7rem;color:#ffd9a0}
+.mode small{font-size:.68rem;color:var(--muted);line-height:1.25;font-weight:600}
+
+.btn{display:block;width:100%;padding:12px;font-size:1rem;color:var(--paper);background:linear-gradient(180deg,#d9363c,#9b1c22);border:2px solid var(--gold);border-radius:4px;box-shadow:0 6px 18px rgba(193,39,45,.45)}
+.btn:active{transform:scale(.97)}
+.btn.ghost{margin-top:8px;padding:10px;font-size:.88rem;background:rgba(255,255,255,.07);border-color:rgba(243,233,210,.3);box-shadow:none;color:var(--muted)}
+.list{display:flex;flex-direction:column;gap:10px;margin:8px 0 14px;text-align:left}
+.item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:rgba(0,0,0,.45);border:2px solid rgba(243,233,210,.16);border-radius:4px}
+.item.on{border-color:var(--gold)}
+.item .t{font-size:.86rem;font-weight:800;display:flex;justify-content:space-between;gap:8px}
+.item .t i{font-style:normal;color:var(--gold);font-size:.74rem;white-space:nowrap}
+.item p{font-size:.7rem;color:var(--muted);margin:3px 0;line-height:1.3;font-weight:600}
+.item>div:first-child{flex:1}
+.prog{display:flex;align-items:center;gap:8px;margin-top:5px;font-size:.72rem;color:#ffd9a0}
+.prog .bar{flex:1}
+.prog .bar>i{background:linear-gradient(90deg,var(--gold),var(--red))}
+.sw{height:8px;width:85%;border-radius:2px;margin-top:4px}
+.sl-sea_slash{border-color:#3aa7d9;background:linear-gradient(145deg,rgba(0,60,140,.5),rgba(0,0,0,.45))}
+.sl-sea_slash .t,.sl-sea_slash p{color:#9fe3ff;text-shadow:0 0 8px #0077b6}
+.sl-glory_gold{border-color:var(--gold);background:linear-gradient(145deg,rgba(255,170,0,.25),rgba(0,0,0,.45))}
+.sl-glory_gold .t,.sl-glory_gold p{color:#ffd700;text-shadow:0 0 8px #ff9e00,0 0 2px #fff3b0;animation:glit 1.4s ease-in-out infinite alternate}
+@keyframes glit{to{text-shadow:0 0 14px #ffd700,0 0 3px #fff}}
+.sl-cursed_slash{border-color:#d41a22;background:linear-gradient(145deg,#a3121a,#4a0609);box-shadow:0 0 14px rgba(255,26,26,.4),inset 0 0 18px rgba(0,0,0,.6)}
+.sl-cursed_slash .t,.sl-cursed_slash p{color:#050505;text-shadow:0 0 6px #ff1a1a,0 0 14px #b3121a,0 0 2px #ff4d4d}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 16px}
+.stats div{background:rgba(0,0,0,.45);border:1px solid rgba(243,233,210,.15);border-radius:4px;padding:9px;text-align:center;font-size:.68rem;color:var(--muted);font-weight:700}
+.stats b{display:block;font-size:1.25rem;color:var(--gold);margin-top:2px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud" class="hidden">
+  <div class="panel">
+    <div class="score">🍉 <span id="score">0</span></div>
+    <div class="best">TERBAIK: <span id="best">0</span></div>
+    <div class="badge" id="modeTag">NORMAL</div>
+    <div class="exp">
+      <div class="exp-h" id="expHeader"><span>LVL <span id="lvl">1</span> Buah</span><span id="expTxt">0/100</span><span id="buff" class="buff-tag hidden">2X <span id="buffT">10.0</span>d</span></div>
+      <div class="bar"><i id="expBar"></i></div>
+    </div>
+  </div>
+  <div class="right">
+    <div class="row">
+      <div class="pill">🪙 <span class="gold">0</span></div>
+      <button class="hud-btn" id="gfxHudBtn" aria-label="Setting Grafik">⚙️ <span id="gfxHudLabel">Kentang</span></button>
+      <button class="hud-btn" id="sndBtn" aria-label="Suara">🔊</button>
+      <button class="hud-btn" id="menuBtn">🏠 Menu</button>
+    </div>
+    <div id="lives"></div>
+  </div>
+</div>
+<div id="toasts"></div>
+<button class="skill hidden" id="skillBtn" aria-label="Rapid Slash"><span class="orb"><svg viewBox="0 0 52 52"><defs><linearGradient id="bl" x1="0" x2="1"><stop offset="0" stop-color="#9fb3bd"/><stop offset=".5" stop-color="#fff"/><stop offset="1" stop-color="#b8c8d0"/></linearGradient></defs><g transform="rotate(45 26 26)"><path d="M26 2 L29.5 8 V34 H22.5 V8 Z" fill="url(#bl)"/><ellipse cx="26" cy="35" rx="8" ry="2.8" fill="#e6b422" stroke="#7a5a00"/><rect x="23.5" y="37" width="5" height="12" rx="1.5" fill="#c1272d" stroke="#3a0808"/><path d="M23.5 40 H28.5 M23.5 43 H28.5 M23.5 46 H28.5" stroke="#3a0808"/></g></svg></span><small id="skillSub">Siap!</small></button>
+
+<div class="ov" id="startScr">
+  <div class="card">
+    <div class="top">
+      <div class="chip">🪙 <span class="gold">0</span> Gold</div>
+      <div class="acts">
+        <button class="chip blue" id="openG">⚙️ Grafik: <b id="gfxStartLabel">Kentang</b></button>
+        <button class="chip red" id="openM">📜 Misi</button>
+        <button class="chip green" id="openS">🛒 Shop</button>
+      </div>
+    </div>
+    <div class="seal">忍</div>
+    <h1>Ninja Fruit Slashers</h1>
+    <div class="blade"></div>
+    <p class="sub">Tebas buah dengan katana, kumpulkan EXP &amp; Gold, hindari bom!</p>
+    <div class="h3">Pilih Tingkat Kesulitan</div>
+    <div class="modes" id="modes"></div>
+    <button class="btn" id="startBtn">Mulai Permainan</button>
+  </div>
+</div>
+
+<div class="ov modal hidden" id="gfxM">
+  <div class="card">
+    <div class="top"><div class="h3" style="margin:0">⚙️ Setting Grafik</div><div class="chip">Mode: <span id="gfxModalLabel">Kentang</span></div></div>
+    <p class="sub">Pilih kualitas grafis. Efek flash sudah dioptimalkan di kedua preset.</p>
+    <div class="list" id="gfxList"></div>
+    <button class="btn ghost" style="margin-top:0" data-close="gfxM">Kembali</button>
+  </div>
+</div>
+
+<div class="ov modal hidden" id="missionM">
+  <div class="card">
+    <div class="top"><div class="h3" style="margin:0">📜 Gulungan Misi (×2)</div><div class="chip">🪙 <span class="gold">0</span></div></div>
+    <p class="sub">Selesaikan misi saat bermain untuk dapat Gold. Target &amp; hadiah berikutnya dikali 2.</p>
+    <div class="list" id="missionList"></div>
+    <button class="btn ghost" style="margin-top:0" data-close="missionM">Kembali</button>
+  </div>
+</div>
+
+<div class="ov modal hidden" id="shopM">
+  <div class="card">
+    <div class="top"><div class="h3" style="margin:0">🛒 Toko Efek Katana</div><div class="chip">🪙 <span class="gold">0</span></div></div>
+    <p class="sub">Beli efek tebasan spesial dengan Gold dari misi.</p>
+    <div class="list" id="shopList"></div>
+    <button class="btn ghost" style="margin-top:0" data-close="shopM">Kembali</button>
+  </div>
+</div>
+
+<div class="ov hidden" id="overScr">
+  <div class="card" style="max-width:400px">
+    <div class="seal">死</div>
+    <h2>Game Over</h2>
+    <div class="blade"></div>
+    <p class="sub" id="overWhy" style="color:#ff8a80">Nyawa habis terkena bom!</p>
+    <div class="stats">
+      <div>Skor Akhir<b id="oScore">0</b></div><div>Skor Terbaik<b id="oBest">0</b></div>
+      <div>Level Buah<b id="oLvl">1</b></div><div>Gold Misi Run Ini<b id="oGold">0</b></div>
+    </div>
+    <button class="btn" id="againBtn">Main Lagi</button>
+    <button class="btn ghost" id="homeBtn">🏠 Menu Utama</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const cv = $('c'), ctx = cv.getContext('2d');
+const rnd = (a, b) => a + Math.random() * (b - a);
+const ls = (k, d) => { try { const v = localStorage.getItem(k); if (v === null) return d; try { return JSON.parse(v); } catch { return v; } } catch { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch {} };
+
+/* ---------- Data ---------- */
+const MODES = {
+  noob:       { label:'NOOB',       kanji:'初', color:'#aeea00', lives:3, miss:1, rs:1.25, g:.16, vy:[10.5,13],   gap:1.55, batch:[1,2], bomb:0,   gold:.3, maxB:0, delay:0,  desc:'Maks 2 buah, lambat, -1 poin' },
+  normal:     { label:'NORMAL',     kanji:'忍', color:'#4fc3f7', lives:3, miss:2, rs:1,    g:.22, vy:[12.2,15.2], gap:1.25, batch:[1,3], bomb:.16, gold:.3, maxB:3, delay:10, desc:'Maks 3 buah (delay bom 10d)' },
+  hard:       { label:'HARD',       kanji:'鬼', color:'#ffb74d', lives:3, miss:3, rs:.92,  g:.28, vy:[13.8,17.2], gap:.95,  batch:[2,4], bomb:.24, gold:.3, maxB:3, delay:8,  desc:'Maks 4 buah (delay bom 8d)' },
+  impossible: { label:'IMPOSSIBLE', kanji:'死', color:'#ff5252', lives:1, miss:5, rs:.85,  g:.35, vy:[15.5,19.2], gap:.72,  batch:[2,4], bomb:.3,  gold:.3, maxB:3, delay:8,  desc:'Maks 4 buah (delay bom 8d)' }
+};
+MODES.noob.mult = MODES.normal.mult = 1; MODES.hard.mult = 2; MODES.impossible.mult = 2.5;
+
+const FRUITS = [
+  { n:'watermelon', r:40, p:3, o:'#2d6a4f', s:'#1b4332', i:'#ff4d6d', j:'#ff3b5c' },
+  { n:'orange',     r:34, p:2, o:'#ff8500', i:'#ffb703', j:'#ff9500' },
+  { n:'apple',      r:33, p:2, o:'#d90429', i:'#fff3b0', j:'#ef233c' },
+  { n:'strawberry', r:30, p:2, o:'#e63946', i:'#ffccd5', j:'#ff4d6d' },
+  { n:'grape',      r:33, p:1, o:'#7b2cbf', i:'#c77dff', j:'#9d4edd' },
+  { n:'blueberry',  r:30, p:1, o:'#1d4ed8', i:'#93c5fd', j:'#3b82f6' }
+];
+const GOLDEN  = { n:'golden',  r:38, p:5, o:'#ffd700', i:'#fff6b3', j:'#ffd700', golden:true }; // Muncul di semua mode (min 1 per gelombang)
+const DIAMOND = { n:'diamond', r:32, p:3, o:'#4fc3f7', i:'#c9f1ff', j:'#4fc3f7', special:'diamond' }; // 10% spawn, maks 2/gelombang, delay 20d saat ditebas
+const GALAXY  = { n:'galaxy',  r:36, p:5, o:'#1a0b3d', i:'#6a2cc7', j:'#a95bff', special:'galaxy' };  // 10% spawn, min 1/gelombang, delay 30d saat ditebas/jatuh, kurangi CD 10d
+
+const SLASHES = {
+  default:      { name:'Classic Katana', icon:'⚔️', price:0,  desc:'Bilah baja putih berpendar gradasi biru, seperti tebasan katana.', sw:'linear-gradient(90deg,#0050ff,#00e5ff,#fff)',
+    layers:[['0,90,255',.45,24],['0,229,255',.7,15],['255,255,255',.98,7]] },
+  sea_slash:    { name:'Sea Slash',      icon:'🌊', price:20, desc:'Efek biru dengan ikan, koral, dan bintang laut yang menari mengikuti tebasan.', sw:'linear-gradient(90deg,#003a8c,#0077b6,#90e0ef)',
+    layers:[['0,40,120',.7,36],['0,119,182',.8,25],['72,202,228',.9,15],['202,240,248',.95,6]] },
+  glory_gold:   { name:'Glory Gold',     icon:'👑', price:25, desc:'Efek emas, tulisan emas, dan glitter emas yang berkilau.', sw:'linear-gradient(90deg,#ff7a00,#ffd700,#fff3b0)',
+    layers:[['255,110,0',.55,48],['255,183,3',.85,34],['255,225,90',.95,21],['255,252,220',1,9]], glow:['#ffc800',20] },
+  cursed_slash: { name:'Cursed Slash',   icon:'👹', price:50, desc:'Efek merah menyeramkan, teks hitam beraura, dengan sayatan dan bintang putih.', sw:'linear-gradient(90deg,#fff,#666,#000)',
+    layers:[['255,255,255',.55,36],['170,170,180',.8,25],['25,25,35',.97,15],['0,0,0',1,7]], glow:['#ff1a1a',24] }
+};
+
+const GFX_PRESETS = {
+  kentang: {
+    name: 'Kentang (Teroptimasi)',
+    badge: 'PERFORMA TINGGI',
+    desc: 'Flash super ringan & cepat pudar, tanpa shadowBlur, partikel & splat dibatasi.',
+    flashScale: 0.22,
+    flashDecay: 4.5,
+    galaxyAlpha: 0.14,
+    galaxyDecay: 3.2,
+    galaxyStars: 18,
+    glow: false,
+    maxParts: 75,
+    maxSplats: 6,
+    maxFishes: 3,
+    juiceMul: 0.45,
+    bladeRate: 0.55
+  },
+  hd: {
+    name: 'HD (Sedikit Dioptimalkan)',
+    badge: 'VISUAL PENUH',
+    desc: 'Efek glow & warna penuh dengan flash yang diperhalus sedikit serta batas partikel rapi.',
+    flashScale: 0.62,
+    flashDecay: 2.4,
+    galaxyAlpha: 0.36,
+    galaxyDecay: 1.6,
+    galaxyStars: 42,
+    glow: true,
+    maxParts: 165,
+    maxSplats: 14,
+    maxFishes: 6,
+    juiceMul: 0.85,
+    bladeRate: 0.85
+  }
+};
+
+const MISSION_INFO = {
+  fruits:  { title:'🍉 Hancurkan Buah', done:'🍉 Misi Potong Buah Selesai!' },
+  survive: { title:'⏱️ Bertahan (Detik)', done:'⏱️ Misi Bertahan Selesai!' },
+  bombs:   { title:'💣 Belah Bom', done:'💣 Misi Belah Bom Selesai!' },
+  skill:   { title:'⚡ Skilled User (Pakai Skill)', done:'⚡ Misi Skilled User Selesai!' }
+};
+
+/* ---------- State tersimpan ---------- */
+let gold = +ls('nfs_gold', 0) || 0;
+let owned = ls('nfs_owned_slashes', ['default']);
+let equipped = ls('nfs_equipped_slash', 'default');
+if (!SLASHES[equipped]) equipped = 'default';
+let gfxKey = ls('nfs_gfx', 'kentang');
+if (!GFX_PRESETS[gfxKey]) gfxKey = 'kentang';
+let gfx = GFX_PRESETS[gfxKey];
+
+let missions = ls('nfs_missions', null) || {
+  fruits:{progress:0,target:5,reward:1,level:1}, survive:{progress:0,target:30,reward:5,level:1}, bombs:{progress:0,target:1,reward:2,level:1}
+};
+missions.skill = missions.skill || { progress:0, target:1, reward:3, level:1 };
+let bests = ls('ninjaFruitBestScores', {});
+const save = () => {
+  lsSet('nfs_gold', String(gold));
+  lsSet('nfs_owned_slashes', owned);
+  lsSet('nfs_equipped_slash', equipped);
+  lsSet('nfs_gfx', gfxKey);
+  lsSet('nfs_missions', missions);
+  showGold();
+};
+const showGold = () => document.querySelectorAll('.gold').forEach(e => e.textContent = gold);
+
+/* ---------- State game ---------- */
+let modeKey = 'normal', cfg = MODES.normal, state = 'MENU', endTimer = 0;
+let W = 0, H = 0, score = 0, lives = 3, maxLives = 3, runGold = 0, sound = true;
+let level = 1, exp = 0, expNeed = 100, buffT = 0, diamondExpT = 0, spawnT = 0, surviveT = 0, bombDelay = 0;
+let diamondDelay = 0, galaxyDelay = 0;
+let shake = 0, flash = 0, flashColor = '#fff';
+let ents = [], halves = [], parts = [], splats = [], texts = [], trail = [], fishes = [];
+let down = false, ptr = { x:0, y:0 }, lastSnd = 0;
+const SKILL_TIME = 5, SKILL_CD = 45;
+let skillT = 0, skillCd = 0, skillCdMax = SKILL_CD, skillAcc = 0, zaps = [];
+let galaxyT = 0, galaxyStars = [];
+
+/* ---------- Audio ---------- */
+let AC = null;
+const initAudio = () => { if (!AC) { const A = window.AudioContext || window.webkitAudioContext; if (A) AC = new A(); } if (AC && AC.state === 'suspended') AC.resume(); };
+function tone(type, f1, f2, dur, vol, delay = 0) {
+  const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f1, t);
+  if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur);
+}
+function noise(dur, type, f1, f2, vol, delay = 0, q = 1) {
+  const t = AC.currentTime + delay, n = AC.sampleRate * dur | 0;
+  const b = AC.createBuffer(1, n, AC.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  s.buffer = b; f.type = type; f.Q.value = q;
+  f.frequency.setValueAtTime(f1, t); f.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+  s.connect(f); f.connect(g); g.connect(AC.destination); s.start(t);
+}
+function play(k) {
+  if (!sound || !AC) return;
+  if (k === 'slash') { noise(.16, 'bandpass', rnd(2200, 3200), rnd(600, 900), .35, 0, 2); tone('triangle', rnd(2800, 3600), 2000, .12, .035); }
+  else if (k === 'draw') { noise(.35, 'highpass', 1500, 6000, .4); tone('triangle', 2400, 3800, .45, .06); tone('sine', 3200, 0, .5, .04, .08); }
+  else if (k === 'slice') {
+    tone('triangle', 1800, 900, .09, .09);
+    noise(.22, 'bandpass', 1800, 500, .5, .02, .8);
+    for (let i = 0; i < 3; i++) tone('sine', rnd(500, 900), rnd(1200, 1800), .06, .07, .03 + i * .045);
+  }
+  else if (k === 'miss') tone('sawtooth', 210, 95, .18, .1);
+  else if (k === 'golden') [523, 659, 784, 1046].forEach((f, i) => tone('sine', f, 0, .28, .15, i * .045));
+  else if (k === 'mission') [587, 880, 1175].forEach((f, i) => tone('triangle', f, 0, .3, .17, i * .06));
+  else if (k === 'bomb') {
+    const n = AC.sampleRate * .45 | 0, b = AC.createBuffer(1, n, AC.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (AC.sampleRate * .12));
+    const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+    s.buffer = b; f.type = 'lowpass'; f.frequency.value = 420; g.gain.value = .45;
+    s.connect(f); f.connect(g); g.connect(AC.destination); s.start();
+  }
+}
+
+/* ---------- Latar belakang ---------- */
+const bg = document.createElement('canvas');
+function buildBg() {
+  bg.width = W; bg.height = H;
+  const g = bg.getContext('2d');
+  let seed = 7; const r = () => (seed = seed * 16807 % 2147483647) / 2147483647;
+  const sky = g.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#1a1030'); sky.addColorStop(.55, '#2a1420'); sky.addColorStop(1, '#0f0707');
+  g.fillStyle = sky; g.fillRect(0, 0, W, H);
+  const mx = W * .78, my = H * .2, mr = Math.min(W, H) * .09;
+  const glow = g.createRadialGradient(mx, my, mr * .6, mx, my, mr * 3);
+  glow.addColorStop(0, 'rgba(255,220,150,.35)'); glow.addColorStop(1, 'rgba(255,220,150,0)');
+  g.fillStyle = glow; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#f6e7c1'; g.beginPath(); g.arc(mx, my, mr, 0, 7); g.fill();
+  g.fillStyle = '#c1272d'; g.globalAlpha = .12; g.fillRect(0, H * .55, W, H); g.globalAlpha = 1;
+  g.fillStyle = '#1c0f14'; g.beginPath(); g.moveTo(0, H);
+  for (let x = 0; x <= W + 40; x += 40) g.lineTo(x, H * .62 - Math.abs(Math.sin(x * .004 + 1)) * H * .16 - r() * 14);
+  g.lineTo(W, H); g.fill();
+  const n = Math.max(5, W / 90 | 0);
+  for (let i = 0; i < n; i++) {
+    const x = (i + .3 + r() * .4) * W / n, w = 10 + r() * 8, sh = i % 2 ? .6 : 1;
+    g.fillStyle = `rgba(${18 * sh | 0},${42 * sh | 0},${26 * sh | 0},${.55 + sh * .3})`; g.fillRect(x, 0, w, H);
+    g.fillStyle = 'rgba(0,0,0,.35)';
+    for (let y = r() * 90; y < H; y += 80 + r() * 50) g.fillRect(x - 2, y, w + 4, 4);
+  }
+  const v = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .75);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.6)');
+  g.fillStyle = v; g.fillRect(0, 0, W, H);
+}
+function resize() {
+  const dpr = Math.min(devicePixelRatio || 1, gfxKey === 'kentang' ? 1.5 : 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  buildBg();
+}
+addEventListener('resize', resize);
+
+/* ---------- HUD & UI ---------- */
+function triggerFlash(color, intensity = 1) {
+  flash = Math.min(1, intensity * gfx.flashScale);
+  flashColor = color;
+}
+function applyGfx(key) {
+  if (!GFX_PRESETS[key]) return;
+  gfxKey = key;
+  gfx = GFX_PRESETS[key];
+  const shortName = key === 'kentang' ? 'Kentang' : 'HD';
+  $('gfxHudLabel').textContent = shortName;
+  $('gfxStartLabel').textContent = shortName;
+  $('gfxModalLabel').textContent = shortName;
+  if (parts.length > gfx.maxParts) parts.length = gfx.maxParts;
+  if (splats.length > gfx.maxSplats) splats.splice(0, splats.length - gfx.maxSplats);
+  if (fishes.length > gfx.maxFishes) fishes.length = gfx.maxFishes;
+  if (flash > gfx.flashScale) flash = gfx.flashScale;
+  resize();
+  save();
+  renderGfx();
+}
+function renderGfx() {
+  $('gfxList').innerHTML = Object.entries(GFX_PRESETS).map(([k, g]) => {
+    const on = k === gfxKey;
+    const btn = on
+      ? '<button class="chip green" disabled>Aktif</button>'
+      : `<button class="chip red" data-gfx="${k}">Pilih</button>`;
+    return `<div class="item ${on ? 'on' : ''}"><div><div class="t">${g.name} <i>${g.badge}</i></div><p>${g.desc}</p></div>${btn}</div>`;
+  }).join('');
+}
+
+function drawLives() {
+  $('lives').innerHTML = Array.from({ length: maxLives }, (_, i) => `<span class="${i >= lives ? 'lost' : ''}">❤</span>`).join('');
+}
+function drawLevel() {
+  const isBlue = diamondExpT > 0;
+  $('expHeader').classList.toggle('diamond-txt', isBlue);
+  $('lvl').textContent = level;
+  $('expTxt').textContent = `${exp}/${expNeed}`;
+  const bar = $('expBar');
+  bar.style.width = Math.min(100, exp / expNeed * 100) + '%';
+  bar.classList.toggle('diamond-exp', isBlue);
+  bar.classList.toggle('buff', !isBlue && buffT > 0);
+  $('buff').classList.toggle('hidden', buffT <= 0);
+  $('buffT').textContent = buffT.toFixed(1);
+}
+function addScore(d, penalty) {
+  score = Math.max(0, score + d);
+  $('score').textContent = score;
+  if (penalty) { $('score').style.color = '#ff5252'; setTimeout(() => $('score').style.color = '', 250); }
+  if (score > (bests[modeKey] || 0)) { bests[modeKey] = score; $('best').textContent = score; lsSet('ninjaFruitBestScores', bests); }
+}
+function addExp(base, x, y, multOverride = 1) {
+  exp += Math.round(base * (buffT > 0 ? 2 : 1) * multOverride * cfg.mult);
+  while (exp >= expNeed) {
+    exp -= expNeed; level++; expNeed = Math.round(expNeed * 1.25);
+    texts.push({
+      x, y: y - 46, t: `LEVEL UP! LVL ${level}`,
+      c: diamondExpT > 0 ? '#7fd8ff' : '#8bd17c',
+      s: 22, life: 1.3, vy: -1.3
+    });
+  }
+  drawLevel();
+}
+function toast(key, g) {
+  const d = document.createElement('div');
+  d.className = 'toast';
+  d.innerHTML = `<span>${MISSION_INFO[key].done}</span><span style="color:var(--gold)">+${g} 🪙</span>`;
+  $('toasts').appendChild(d);
+  setTimeout(() => d.remove(), 3100);
+}
+function advance(key, n) {
+  const m = missions[key];
+  m.progress += n;
+  while (m.progress >= m.target) {
+    m.progress -= m.target; gold += m.reward; runGold += m.reward;
+    toast(key, m.reward); play('mission');
+    m.target *= 2; m.reward *= 2; m.level++;
+  }
+  save();
+}
+function renderModes() {
+  $('modes').innerHTML = Object.entries(MODES).map(([k, m]) =>
+    `<button type="button" class="mode ${k === modeKey ? 'on' : ''}" data-mode="${k}">${m.mult > 1 ? `<span class="xp">${String(m.mult).replace('.', ',')}× EXP</span>` : ''}<b style="color:${m.color}">${m.kanji} ${m.label[0] + m.label.slice(1).toLowerCase()}</b><em>${'❤️'.repeat(m.lives)} ${m.lives} Nyawa</em><small>${m.desc}</small></button>`).join('');
+}
+function renderMissions() {
+  $('missionList').innerHTML = Object.entries(MISSION_INFO).map(([k, info]) => {
+    const m = missions[k];
+    return `<div class="item"><div><div class="t"><span>${info.title} <small style="color:var(--muted)">Lv.${m.level}</small></span><i>+${m.reward} 🪙</i></div>
+      <div class="prog"><div class="bar"><i style="width:${Math.min(100, m.progress / m.target * 100)}%"></i></div><span>${m.progress}/${m.target}</span></div></div></div>`;
+  }).join('');
+}
+function renderShop() {
+  $('shopList').innerHTML = Object.entries(SLASHES).map(([id, s]) => {
+    const has = owned.includes(id), on = equipped === id;
+    const btn = on ? '<button class="chip green" disabled>Dipakai</button>'
+      : has ? `<button class="chip red" data-equip="${id}">Pakai</button>`
+      : `<button class="chip" data-buy="${id}">Beli ${s.price} 🪙</button>`;
+    return `<div class="item sl-${id} ${on ? 'on' : ''}"><div><div class="t">${s.icon} ${s.name}</div><p>${s.desc}</p><div class="sw" style="background:${s.sw}"></div></div>${btn}</div>`;
+  }).join('');
+}
+const show = (el, v) => $(el).classList.toggle('hidden', !v);
+function goMenu() {
+  state = 'MENU'; ents = []; halves = []; trail = []; down = false; save();
+  ['overScr', 'missionM', 'shopM', 'gfxM', 'hud', 'skillBtn'].forEach(e => show(e, false));
+  show('startScr', true);
+  renderModes();
+}
+function startGame() {
+  initAudio();
+  cfg = MODES[modeKey];
+  score = 0; runGold = 0; maxLives = lives = cfg.lives;
+  level = 1; exp = 0; expNeed = 100; buffT = 0; diamondExpT = 0; surviveT = 0; bombDelay = 0;
+  diamondDelay = 0; galaxyDelay = 0;
+  spawnT = .45; shake = flash = 0;
+  ents = []; halves = []; parts = []; splats = []; texts = []; trail = []; fishes = [];
+  skillT = skillAcc = 0; skillCd = skillCdMax = 10; zaps = []; galaxyT = 0;
+  $('score').textContent = 0; $('best').textContent = bests[modeKey] || 0;
+  $('modeTag').textContent = cfg.label + (cfg.mult > 1 ? ' ×' + cfg.mult : ''); $('modeTag').style.color = cfg.color;
+  drawLives(); drawLevel(); showGold();
+  ['startScr', 'missionM', 'shopM', 'gfxM', 'overScr'].forEach(e => show(e, false));
+  show('hud', true); show('skillBtn', true);
+  state = 'PLAYING';
+}
+function gameOver() {
+  state = 'OVER'; down = false; save();
+  $('oScore').textContent = score; $('oBest').textContent = bests[modeKey] || 0;
+  $('oLvl').textContent = level; $('oGold').textContent = runGold;
+  show('overScr', true); show('skillBtn', false);
+}
+
+/* ---------- Spawn ---------- */
+function pickFruitType(diamondCount) {
+  const r = Math.random();
+  if (r < 0.30) return GOLDEN;                                   // 30% buah emas
+  if (r < 0.40 && diamondDelay <= 0 && diamondCount < 2) return DIAMOND; // 10% buah diamond, maks 2/gelombang
+  return FRUITS[Math.random() * FRUITS.length | 0];
+}
+
+function makeEnt(type, isBomb, margin, scale, flight, fresh) {
+  let x;
+  for (let t = 0; t < 8; t++) {
+    x = rnd(margin, Math.max(margin + 40, W - margin));
+    if (!isBomb || fresh.concat(ents).every(o => o.bomb || o.sliced || Math.abs(o.x - x) > 110)) break;
+  }
+  const tx = rnd(W * .2, W * .8);
+  return {
+    x, y: H + 45, vx: (tx - x) / flight + rnd(-.7, .7), vy: -rnd(cfg.vy[0], cfg.vy[1]) * scale,
+    radius: (isBomb ? 34 : type.r) * cfg.rs, rot: rnd(0, 6.28), vr: rnd(-.055, .055),
+    bomb: isBomb, type, sliced: false
+  };
+}
+
+function spawnWave() {
+  const count = cfg.batch[0] + (Math.random() * (cfg.batch[1] - cfg.batch[0] + 1) | 0);
+  const margin = Math.min(100, W * .12), scale = Math.sqrt(Math.max(.65, H / 760)), flight = 56;
+  let bombs = ents.filter(e => e.bomb && !e.sliced).length;
+  let diamondCount = 0;
+  const fresh = [];
+
+  for (let i = 0; i < count; i++) {
+    const bomb = bombDelay <= 0 && bombs < cfg.maxB && Math.random() < cfg.bomb;
+    if (bomb) bombs++;
+    const type = bomb ? null : pickFruitType(diamondCount);
+    if (type && type.special === 'diamond') diamondCount++;
+    fresh.push(makeEnt(type, bomb, margin, scale, flight, fresh));
+  }
+
+  // Buah Emas selalu muncul minimal 1 per gelombang di semua mode
+  if (!fresh.some(e => !e.bomb && e.type && e.type.golden)) {
+    const goldIdx = fresh.findIndex(e => !e.bomb);
+    const goldEnt = makeEnt(GOLDEN, false, margin, scale, flight, fresh);
+    if (goldIdx >= 0) fresh[goldIdx] = goldEnt;
+    else fresh.push(goldEnt);
+  }
+
+  // Buah Galaxy: kesempatan spawn 10%, minimal spawn 1 (jika tidak sedang delay 30 detik)
+  if (galaxyDelay <= 0 && Math.random() < 0.10) {
+    const galaxyIdx = fresh.findIndex(e => !e.bomb && !(e.type && e.type.golden));
+    const gEnt = makeEnt(GALAXY, false, margin, scale, flight, fresh);
+    if (galaxyIdx >= 0) fresh[galaxyIdx] = gEnt;
+    else fresh.push(gEnt);
+  }
+
+  fresh.sort((a, b) => a.bomb - b.bomb);
+  ents.push(...fresh);
+}
+
+/* ---------- Efek ---------- */
+function juice(x, y, color, n) {
+  const total = Math.max(2, Math.round(n * gfx.juiceMul));
+  for (let i = 0; i < total && parts.length < gfx.maxParts; i++) {
+    const a = rnd(0, 6.28), sp = rnd(2.5, 10);
+    parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.5, r: rnd(2.5, 7), c: color, a: 1, g: .25 });
+  }
+}
+function bladeFx(x, y, dx, dy) {
+  if (parts.length >= gfx.maxParts || Math.random() > gfx.bladeRate) return;
+  const P = o => {
+    if (parts.length < gfx.maxParts)
+      parts.push({ x: x + rnd(-8, 8), y: y + rnd(-8, 8), vx: rnd(-1.5, 1.5), vy: rnd(-2, 1), r: rnd(3, 6), a: 1, g: .05, ...o });
+  };
+  if (equipped === 'sea_slash') {
+    const n = Math.hypot(dx, dy) || 1;
+    if (Math.random() < .35) P({ k: 'coral', c: Math.random() < .5 ? '#ff6f61' : '#ffb74d', r: rnd(5, 9), g: .1, rot: rnd(-.8, .8), fd: 1.1 });
+    if (Math.random() < .5) P({ k: 'bub', c: '#bfefff', r: rnd(2, 5), g: -.06, fd: 1.1 });
+    if (Math.random() < .12) P({ k: 'starfish', c: Math.random() < .5 ? '#ff8a65' : '#ffab91', r: rnd(7, 11), g: .08, rot: rnd(0, 6.28), fd: 1 });
+    if (fishes.length < gfx.maxFishes && Math.random() < .14)
+      fishes.push({ x, y, vx: dx / n * 3.2, vy: dy / n * 3.2, ph: rnd(0, 6.28), a: 1, s: rnd(.8, 1.2), c: Math.random() < .5 ? '#ff9a3c' : '#4fc3f7' });
+  } else if (equipped === 'glory_gold') {
+    P({ k: 'star', c: Math.random() < .5 ? '#ffd700' : '#fff9c4', r: rnd(4, 10), g: .02, rot: rnd(0, 3), fd: 1.2 });
+    const glCount = gfxKey === 'kentang' ? 2 : 3;
+    for (let i = 0; i < glCount; i++) P({ k: 'glit', c: Math.random() < .5 ? '#ffd700' : '#fff3b0', r: rnd(1, 2.6), x: x + rnd(-24, 24), y: y + rnd(-24, 24), vx: rnd(-.6, .6), vy: rnd(-.8, .4), g: .01, fd: 1.1 });
+  } else if (equipped === 'cursed_slash') {
+    P({ k: 'smoke', c: Math.random() < .6 ? '#000' : '#8b0a12', r: rnd(8, 16), vx: rnd(-.8, .8), vy: rnd(-1.2, .2), g: -.02, fd: 1.4 });
+    if (Math.random() < .5) P({ k: 'star', c: '#fff', r: rnd(4, 9), g: .02, rot: rnd(0, 3), fd: 1.5 });
+    P({ k: 'shard', c: Math.random() < .5 ? '#fff' : '#c4161c', r: rnd(14, 26), x: x + rnd(-28, 28), y: y + rnd(-28, 28), rot: Math.atan2(dy, dx) + rnd(-.6, .6), g: 0, fd: 2.2 });
+  } else P({ c: '#9be8ff', r: rnd(1.5, 3.5), fd: 2.2 });
+}
+
+/* ---------- Tebasan ---------- */
+function special(e, t) {
+  const x = Math.min(Math.max(e.x, 150), W - 150);
+  if (t.special === 'diamond') {
+    diamondDelay = 20;
+    diamondExpT = 8;
+    level += 1;
+    drawLevel();
+    triggerFlash('#3aa7ff', 0.85);
+    texts.push({ x, y: e.y - 44, t: 'BUAH DIAMOND! +1 LEVEL', c: '#7fd8ff', s: 22, life: 1.5, vy: -1.1 });
+    texts.push({ x, y: e.y - 18, t: 'EXP 4× (BIRU) • DELAY 20d', c: '#c9f1ff', s: 17, life: 1.5, vy: -1.1 });
+    juice(e.x, e.y, '#4fc3f7', 24);
+  } else {
+    galaxyDelay = 30;
+    if (skillT <= 0 && skillCd > 0) skillCd = Math.max(0, skillCd - 10);
+    triggerFlash('#9b4dff', 1.0);
+    galaxyT = 1;
+    galaxyStars = Array.from({ length: gfx.galaxyStars }, () => ({ x: rnd(0, W), y: rnd(0, H), r: rnd(1, 3.2) }));
+    texts.push({ x, y: e.y - 44, t: 'BUAH GALAXY!', c: '#d9b3ff', s: 24, life: 1.7, vy: -1 });
+    texts.push({ x, y: e.y - 16, t: 'COOLDOWN SKILL -10d • DELAY 30d', c: '#fff', s: 16, life: 1.7, vy: -1 });
+    juice(e.x, e.y, '#a95bff', 20); juice(e.x, e.y, '#fff', 14);
+    const starCount = gfxKey === 'kentang' ? 4 : 8;
+    for (let i = 0; i < starCount; i++) parts.push({ k: 'star', c: '#fff', x: e.x, y: e.y, vx: rnd(-6, 6), vy: rnd(-6, 6), r: rnd(5, 10), a: 1, g: .05, rot: rnd(0, 3), fd: 1.2 });
+  }
+}
+function slice(e, ang) {
+  e.sliced = true;
+  if (e.bomb) {
+    const safe = skillT > 0;
+    play('bomb');
+    shake = safe ? (gfxKey === 'kentang' ? 3 : 6) : (gfxKey === 'kentang' ? 10 : 18);
+    triggerFlash(safe ? '#ffd700' : '#ff5252', safe ? 0.4 : 1.0);
+    juice(e.x, e.y, '#ffb74d', 26); juice(e.x, e.y, '#333', 14);
+    advance('bombs', 1);
+    if (safe) { texts.push({ x: e.x, y: e.y - 20, t: 'BOM TERBELAH!', c: '#ffd700', s: 22, life: 1, vy: -1.3 }); return; }
+    lives--; drawLives();
+    texts.push({ x: e.x, y: e.y - 20, t: lives <= 0 ? 'BOOM! NYAWA HABIS!' : 'BOOM! -1 NYAWA', c: '#ff5252', s: 22, life: 1.1, vy: -1.3 });
+    if (lives <= 0) { state = 'ENDING'; endTimer = .4; down = false; }
+    return;
+  }
+  const t = e.type, golden = !!t.golden, isDiamond = t.special === 'diamond';
+  play('slice'); if (golden) play('golden');
+  advance('fruits', 1);
+  if (t.special) special(e, t);
+  const perp = ang + Math.PI / 2;
+  for (const side of [-1, 1])
+    halves.push({ x: e.x + Math.cos(perp) * 6 * side, y: e.y + Math.sin(perp) * 6 * side, vx: e.vx + Math.cos(perp) * 2.4 * side, vy: e.vy - 1.2, r: e.radius, spin: 0, vr: e.vr + .08 * side, ang, side, t });
+  if (splats.length >= gfx.maxSplats) splats.shift();
+  splats.push({ x: e.x, y: e.y, c: t.j, a: gfxKey === 'kentang' ? .35 : .5, b: Array.from({ length: gfxKey === 'kentang' ? 4 : 6 }, () => ({ dx: rnd(-32, 32), dy: rnd(-32, 32), r: rnd(5, 20) })) });
+  juice(e.x, e.y, t.j, golden ? 26 : 16);
+  const m = buffT > 0 ? 2 : 1;
+  if (golden) {
+    buffT = 10; addScore(Math.round(5 * cfg.mult)); addExp(25, e.x, e.y);
+    triggerFlash('#ffd700', 0.45);
+    texts.push({ x: e.x, y: e.y - 14, t: `+${Math.round(5 * cfg.mult)} BUAH EMAS! (2X)`, c: '#ffd700', s: 20, life: 1.35, vy: -1.6 });
+  } else {
+    const g = Math.round(t.p * m * cfg.mult);
+    addScore(g);
+    addExp(15, e.x, e.y, isDiamond ? 4 : 1);
+    texts.push({
+      x: e.x, y: e.y - 10,
+      t: isDiamond ? `+${g} • 4× EXP!` : (m > 1 ? `+${g} (2X)` : `+${g}`),
+      c: isDiamond ? '#7fd8ff' : (m > 1 ? '#ffd700' : '#fff8e1'),
+      s: 21, life: .95, vy: -1.6
+    });
+  }
+}
+
+/* ---------- Skill: Rapid Slash ---------- */
+function useSkill() {
+  if (state !== 'PLAYING' || skillT > 0 || skillCd > 0) return;
+  initAudio(); skillT = SKILL_TIME; skillAcc = 0; play('draw'); advance('skill', 1);
+  texts.push({ x: W / 2, y: H * .4, t: 'RAPID SLASH!', c: '#ffd700', s: 30, life: 1.1, vy: -.8 });
+}
+function rapidSlash() {
+  const maxTargets = gfxKey === 'kentang' ? 2 : 3;
+  const targets = ents.filter(e => !e.sliced && e.vy > -2.5 && e.y < H - 80 && e.y > -e.radius && e.x > 0 && e.x < W).slice(0, maxTargets);
+  for (const e of targets) {
+    const a = rnd(-1.1, 1.1), c = Math.cos(a), s = Math.sin(a), L = 170;
+    zaps.push({ pts: [{ x: e.x - c * L, y: e.y - s * L }, { x: e.x + c * L, y: e.y + s * L }], life: .18 });
+    slice(e, a); bladeFx(e.x, e.y, c, s);
+  }
+  if (!targets.length) {
+    const a = rnd(-1.1, 1.1), c = Math.cos(a), s = Math.sin(a), x = rnd(W * .2, W * .8), y = rnd(H * .15, H * .6);
+    zaps.push({ pts: [{ x: x - c * 150, y: y - s * 150 }, { x: x + c * 150, y: y + s * 150 }], life: .18 });
+  }
+  play('slash'); if (targets.length > 1) play('slash');
+}
+function updateSkill(dt) {
+  if (skillT > 0) {
+    skillT = Math.max(0, skillT - dt);
+    if ((skillAcc -= dt) <= 0) { skillAcc = gfxKey === 'kentang' ? .09 : .06; rapidSlash(); }
+    if (skillT === 0) {
+      skillCd = skillCdMax = SKILL_CD;
+    }
+  } else if (skillCd > 0) {
+    skillCd = Math.max(0, skillCd - dt);
+  }
+  const sub = skillT > 0
+    ? skillT.toFixed(1) + 'd'
+    : (skillCd > 0 ? Math.ceil(skillCd) + 'd' : 'Siap!');
+  if ($('skillSub').textContent !== sub) $('skillSub').textContent = sub;
+  $('skillBtn').classList.toggle('on', skillT > 0);
+  $('skillBtn').classList.toggle('cd', skillT <= 0 && skillCd > 0);
+  $('skillBtn').style.setProperty('--p', skillT > 0 ? 30 : skillCd > 0 ? (1 - skillCd / skillCdMax) * 100 : 100);
+}
+function drawZaps(dt) {
+  for (let i = zaps.length - 1; i >= 0; i--) {
+    const z = zaps[i]; z.life -= dt;
+    if (z.life <= 0) { zaps.splice(i, 1); continue; }
+    drawTrail(z.pts, z.life / .18, true);
+  }
+}
+
+function segDist(px, py, x1, y1, x2, y2) {
+  const l = (x2 - x1) ** 2 + (y2 - y1) ** 2;
+  const t = l ? Math.max(0, Math.min(1, ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l)) : 0;
+  return Math.hypot(px - x1 - t * (x2 - x1), py - y1 - t * (y2 - y1));
+}
+function slashCheck(x1, y1, x2, y2) {
+  const ang = Math.atan2(y2 - y1, x2 - x1);
+  let n = 0, cx = x2, cy = y2;
+  for (const e of ents) {
+    if (e.sliced || state !== 'PLAYING') continue;
+    if (segDist(e.x, e.y, x1, y1, x2, y2) <= e.radius * .96) {
+      slice(e, ang);
+      if (!e.bomb) { n++; cx = e.x; cy = e.y; }
+    }
+  }
+  if (n >= 3 && state === 'PLAYING') {
+    const b = Math.round(n * (buffT > 0 ? 2 : 1) * cfg.mult);
+    addScore(b); addExp(n * 10, cx, cy);
+    texts.push({ x: cx, y: cy - 34, t: `${n}x KOMBO! +${b}`, c: '#ffd700', s: 24, life: 1.15, vy: -1.8 });
+  }
+}
+
+/* ---------- Gambar ---------- */
+function gem(r) {
+  const P = [[-.62, -.6], [.62, -.6], [1, -.12], [0, 1], [-1, -.12]].map(([x, y]) => [x * r, y * r]);
+  const g = ctx.createLinearGradient(-r, -r, r, r);
+  g.addColorStop(0, '#e8fbff'); g.addColorStop(.5, '#4fc3f7'); g.addColorStop(1, '#0077b6');
+  if (gfx.glow) { ctx.shadowColor = '#4fc3f7'; ctx.shadowBlur = 12; }
+  ctx.fillStyle = g; ctx.beginPath();
+  P.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+  ctx.closePath(); ctx.fill();
+  if (gfx.glow) ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.5; ctx.beginPath();
+  ctx.moveTo(P[4][0], P[4][1]); ctx.lineTo(P[2][0], P[2][1]); ctx.moveTo(P[0][0], P[0][1]); ctx.lineTo(0, P[3][1]); ctx.moveTo(P[1][0], P[1][1]); ctx.lineTo(0, P[3][1]);
+  ctx.stroke();
+}
+function galaxy(r) {
+  const g = ctx.createRadialGradient(-r * .3, -r * .3, 2, 0, 0, r);
+  g.addColorStop(0, '#c9a0ff'); g.addColorStop(.45, '#5b21b6'); g.addColorStop(1, '#07030f');
+  if (gfx.glow) { ctx.shadowColor = '#a95bff'; ctx.shadowBlur = 14; }
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill();
+  if (gfx.glow) ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, r * .55, .3, 3.6); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  for (const [x, y, s] of [[-.4, -.2, 1.8], [.3, -.5, 1.4], [.5, .2, 2], [-.1, .5, 1.5], [-.55, .35, 1.2], [.05, -.1, 2.2]]) { ctx.beginPath(); ctx.arc(x * r, y * r, s, 0, 7); ctx.fill(); }
+}
+function fruitShape(t, r, half, side) {
+  ctx.save();
+  if (half) { ctx.beginPath(); ctx.arc(0, 0, r, side < 0 ? Math.PI / 2 : -Math.PI / 2, side < 0 ? Math.PI * 1.5 : Math.PI / 2); ctx.closePath(); ctx.clip(); }
+  if (t.golden && gfx.glow) { ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 14; }
+  if (t.special) { t.special === 'diamond' ? gem(r) : galaxy(r); ctx.restore(); return; }
+  ctx.fillStyle = t.o; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill();
+  if (gfx.glow) ctx.shadowBlur = 0;
+  if (t.n === 'watermelon') {
+    ctx.strokeStyle = t.s; ctx.lineWidth = 4;
+    for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.arc(i * 10, 0, r * .85, -.8, .8); ctx.stroke(); }
+  } else if (t.n === 'strawberry') {
+    ctx.fillStyle = '#ffd166';
+    for (let a = 0; a < 6.28; a += .785) { ctx.beginPath(); ctx.arc(Math.cos(a) * r * .52, Math.sin(a) * r * .52, 1.8, 0, 7); ctx.fill(); }
+    ctx.fillStyle = '#2e7d32'; ctx.beginPath(); ctx.moveTo(-10, -r + 3); ctx.lineTo(0, -r - 6); ctx.lineTo(10, -r + 3); ctx.fill();
+  }
+  ctx.fillStyle = t.i; ctx.beginPath(); ctx.arc(0, 0, r * .82, 0, 7); ctx.fill();
+  if (t.golden) {
+    ctx.fillStyle = '#fff'; ctx.font = `bold ${r * .75 | 0}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('★', 0, 1);
+  } else if (t.n === 'watermelon') {
+    ctx.fillStyle = '#1a1a1a';
+    for (let a = 0; a < 6.28; a += 1.047) { ctx.beginPath(); ctx.arc(Math.cos(a) * r * .45, Math.sin(a) * r * .45, 2.2, 0, 7); ctx.fill(); }
+  } else if (t.n === 'orange') {
+    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2;
+    for (let a = 0; a < 3.14; a += .785) { ctx.beginPath(); ctx.moveTo(-Math.cos(a) * r * .78, -Math.sin(a) * r * .78); ctx.lineTo(Math.cos(a) * r * .78, Math.sin(a) * r * .78); ctx.stroke(); }
+  }
+  ctx.fillStyle = 'rgba(255,255,255,.38)'; ctx.beginPath(); ctx.arc(-r * .3, -r * .3, r * .22, 0, 7); ctx.fill();
+  ctx.restore();
+}
+function bombShape(r, time) {
+  const g = ctx.createRadialGradient(-10, -10, 4, 0, 0, r);
+  g.addColorStop(0, '#424242'); g.addColorStop(1, '#111');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill();
+  ctx.lineWidth = 2.5; ctx.strokeStyle = '#ff5252'; ctx.stroke();
+  ctx.fillStyle = '#212121'; ctx.fillRect(-7, -r - 6, 14, 8);
+  ctx.strokeStyle = '#d7ccc8'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -r - 6); ctx.quadraticCurveTo(10, -r - 18, 16, -r - 12); ctx.stroke();
+  ctx.fillStyle = '#ffca28'; ctx.beginPath(); ctx.arc(16, -r - 12, 5 + Math.sin(time * 25) * 3, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ff5252'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('☠', 0, 2);
+}
+function drawTrail(pts = trail, fade = 1, full = false) {
+  if (pts.length < 2) return;
+  const straight = equipped === 'cursed_slash';
+  ctx.save(); ctx.lineCap = 'round';
+  for (const [li, [c, al, w]] of SLASHES[equipped].layers.entries()) {
+    if (gfxKey === 'kentang' && li === 0) continue;
+    const gl = gfx.glow ? SLASHES[equipped].glow : null;
+    ctx.shadowColor = gl ? gl[0] : 'transparent';
+    ctx.shadowBlur = gl && li === 0 ? gl[1] : 0;
+    const widthMul = gfxKey === 'kentang' ? 0.75 : 1;
+    if (straight) {
+      const a = pts[0], b = pts[pts.length - 1], g = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+      g.addColorStop(0, `rgba(${c},0)`); g.addColorStop(.35, `rgba(${c},${al * fade})`); g.addColorStop(1, `rgba(${c},${al * fade})`);
+      ctx.strokeStyle = g; ctx.lineWidth = w * .8 * widthMul;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      continue;
+    }
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i], k = full ? 1 : i / pts.length;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = `rgba(${c},${k * al * fade})`; ctx.lineWidth = k * w * widthMul; ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawPart(p) {
+  ctx.globalAlpha = Math.max(0, p.a); ctx.fillStyle = p.c; ctx.strokeStyle = p.c; ctx.lineCap = 'round';
+  if (p.k === 'star') {
+    const s = p.r * (.6 + .4 * Math.sin(p.a * 22));
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.beginPath();
+    for (let i = 0; i < 8; i++) { const r = i % 2 ? s * .25 : s, a = i * Math.PI / 4; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+    ctx.fill(); ctx.restore();
+  } else if (p.k === 'coral') {
+    const r = p.r;
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.lineWidth = 2.6; ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(0, -r * 1.6); ctx.moveTo(0, -r * .8); ctx.lineTo(-r * .8, -r * 1.6); ctx.moveTo(0, -r * .9); ctx.lineTo(r * .8, -r * 1.8);
+    ctx.stroke();
+    for (const [x, y] of [[0, -r * 1.6], [-r * .8, -r * 1.6], [r * .8, -r * 1.8]]) { ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 7); ctx.fill(); }
+    ctx.restore();
+  } else if (p.k === 'starfish') {
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.beginPath();
+    for (let i = 0; i < 10; i++) { const r = i % 2 ? p.r * .45 : p.r, a = i * Math.PI / 5 - Math.PI / 2; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+    ctx.fill(); ctx.restore();
+  } else if (p.k === 'glit') {
+    ctx.globalAlpha = Math.max(0, p.a) * (.55 + .45 * Math.sin(p.a * 45));
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+  } else if (p.k === 'smoke') {
+    ctx.globalAlpha = Math.max(0, p.a) * .5;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (1.2 + (1 - p.a) * 1.6), 0, 7); ctx.fill();
+  } else if (p.k === 'bub') {
+    ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.stroke();
+  } else if (p.k === 'shard') {
+    const dx = Math.cos(p.rot) * p.r, dy = Math.sin(p.rot) * p.r;
+    ctx.beginPath(); ctx.moveTo(p.x - dx, p.y - dy); ctx.lineTo(p.x + dx, p.y + dy);
+    ctx.strokeStyle = p.c === '#000' ? '#fff' : '#000'; ctx.lineWidth = 4.5; ctx.stroke();
+    ctx.strokeStyle = p.c; ctx.lineWidth = 2.2; ctx.stroke();
+  } else { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); }
+}
+function drawFishes(k, dt) {
+  for (let i = fishes.length - 1; i >= 0; i--) {
+    const f = fishes[i];
+    f.ph += .3 * k; f.x += f.vx * k; f.y += (f.vy + Math.sin(f.ph) * .8) * k; f.a -= dt * .75;
+    if (f.a <= 0) { fishes.splice(i, 1); continue; }
+    ctx.save(); ctx.globalAlpha = Math.min(1, f.a * 1.5); ctx.translate(f.x, f.y);
+    ctx.rotate(Math.atan2(f.vy + Math.sin(f.ph) * .8, f.vx)); ctx.scale(f.s, f.s);
+    const wag = Math.sin(f.ph * 2) * 3;
+    ctx.fillStyle = f.c;
+    ctx.beginPath(); ctx.ellipse(0, 0, 11, 6, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-9, 0); ctx.lineTo(-17, -6 + wag); ctx.lineTo(-17, 6 + wag); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(6, -1.5, 1.8, 0, 7); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(6.5, -1.5, .9, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* ---------- Loop utama ---------- */
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, .05); last = now;
+  const k = dt * 60, playing = state === 'PLAYING', active = playing || state === 'ENDING';
+  ctx.save();
+  if (shake > 0) { ctx.translate(rnd(-.5, .5) * shake, rnd(-.5, .5) * shake); shake *= .88; if (shake < .5) shake = 0; }
+  ctx.drawImage(bg, 0, 0, W, H);
+
+  for (let i = splats.length - 1; i >= 0; i--) {
+    const s = splats[i]; s.a -= dt * .1;
+    if (s.a <= 0) { splats.splice(i, 1); continue; }
+    ctx.globalAlpha = s.a; ctx.fillStyle = s.c;
+    for (const b of s.b) { ctx.beginPath(); ctx.arc(s.x + b.dx, s.y + b.dy, b.r, 0, 7); ctx.fill(); }
+  }
+  ctx.globalAlpha = 1;
+
+  if (playing) {
+    surviveT += dt;
+    if (surviveT >= 1) { const s = surviveT | 0; surviveT -= s; advance('survive', s); }
+    let needHudUpdate = false;
+    if (buffT > 0) { buffT = Math.max(0, buffT - dt); needHudUpdate = true; }
+    if (diamondExpT > 0) { diamondExpT = Math.max(0, diamondExpT - dt); needHudUpdate = true; }
+    if (needHudUpdate) drawLevel();
+    if (bombDelay > 0) bombDelay = Math.max(0, bombDelay - dt);
+    if (diamondDelay > 0) diamondDelay = Math.max(0, diamondDelay - dt);
+    if (galaxyDelay > 0) galaxyDelay = Math.max(0, galaxyDelay - dt);
+    updateSkill(dt);
+    if ((spawnT -= dt) <= 0) { spawnWave(); spawnT = cfg.gap * Math.max(.62, 1 - score * .0022) + rnd(0, .25); }
+  } else if (state === 'ENDING' && (endTimer -= dt) <= 0) gameOver();
+
+  if (active) {
+    for (let i = ents.length - 1; i >= 0; i--) {
+      const e = ents[i];
+      e.x += e.vx * k; e.y += e.vy * k; e.vy += cfg.g * k; e.rot += e.vr * k;
+      if (e.sliced) { ents.splice(i, 1); continue; }
+      if (e.y > H + 90 && e.vy > 0) {
+        if (playing) {
+          if (!e.bomb) {
+            if (e.type && e.type.special === 'galaxy') {
+              galaxyDelay = 30;
+            }
+            addScore(-cfg.miss, true); play('miss');
+            texts.push({ x: Math.min(Math.max(e.x, 70), W - 70), y: H - 45, t: `-${cfg.miss} POIN`, c: '#ff5252', s: 19, life: .9, vy: -1.2 });
+          } else if (cfg.delay) bombDelay = cfg.delay;
+        }
+        ents.splice(i, 1); continue;
+      }
+      ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.rot);
+      e.bomb ? bombShape(e.radius, now / 1000) : fruitShape(e.type, e.radius, false, 1);
+      ctx.restore();
+    }
+  }
+  for (let i = halves.length - 1; i >= 0; i--) {
+    const h = halves[i];
+    h.x += h.vx * k; h.y += h.vy * k; h.vy += (cfg.g + .06) * k; h.spin += h.vr * k;
+    if (h.y > H + 100) { halves.splice(i, 1); continue; }
+    ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.ang - Math.PI / 2 + h.spin);
+    fruitShape(h.t, h.r, true, -h.side);
+    ctx.restore();
+  }
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    p.x += p.vx * k; p.y += p.vy * k; p.vy += p.g * k; p.a -= dt * (p.fd || 1.45);
+    if (p.a <= 0) { parts.splice(i, 1); continue; }
+    drawPart(p);
+  }
+  ctx.globalAlpha = 1;
+  for (let i = texts.length - 1; i >= 0; i--) {
+    const t = texts[i]; t.y += t.vy * k; t.life -= dt;
+    if (t.life <= 0) { texts.splice(i, 1); continue; }
+    ctx.globalAlpha = Math.min(1, t.life * 1.4);
+    ctx.font = `900 ${t.s}px 'Plus Jakarta Sans',sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#000'; ctx.fillText(t.t, t.x + 2, t.y + 2);
+    ctx.fillStyle = t.c; ctx.fillText(t.t, t.x, t.y);
+  }
+  ctx.globalAlpha = 1;
+  drawFishes(k, dt);
+  drawZaps(dt);
+  const nowT = performance.now();
+  trail = trail.filter(p => nowT - p.t < 170);
+  drawTrail();
+
+  if (flash > 0) {
+    ctx.globalAlpha = Math.max(0, flash);
+    ctx.fillStyle = flashColor;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+    flash -= dt * gfx.flashDecay;
+  }
+  if (galaxyT > 0) {
+    ctx.globalAlpha = Math.max(0, galaxyT * gfx.galaxyAlpha);
+    ctx.fillStyle = '#05010c';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#fff';
+    for (const s of galaxyStars) {
+      ctx.globalAlpha = Math.max(0, galaxyT * gfx.galaxyAlpha * 1.8 * (.4 + .6 * Math.abs(Math.sin(s.x + galaxyT * 12))));
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    galaxyT -= dt * gfx.galaxyDecay;
+  }
+  ctx.restore();
+  requestAnimationFrame(frame);
+}
+
+/* ---------- Input ---------- */
+const xy = e => ({ x: e.clientX, y: e.clientY });
+cv.addEventListener('pointerdown', e => {
+  if (state !== 'PLAYING') return;
+  initAudio(); down = true; ptr = xy(e);
+  trail = [{ ...ptr, t: performance.now() }];
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', e => {
+  if (!down || state !== 'PLAYING') return;
+  const p = xy(e), d = Math.hypot(p.x - ptr.x, p.y - ptr.y);
+  if (d < 3) return;
+  slashCheck(ptr.x, ptr.y, p.x, p.y);
+  bladeFx(p.x, p.y, p.x - ptr.x, p.y - ptr.y);
+  const t = performance.now();
+  trail.push({ ...p, t });
+  if (d > 26 && t - lastSnd > 150) { play('slash'); lastSnd = t; }
+  ptr = p;
+});
+['pointerup', 'pointercancel'].forEach(ev => cv.addEventListener(ev, () => down = false));
+document.addEventListener('visibilitychange', () => { last = performance.now(); down = false; });
+
+/* ---------- Tombol & modal ---------- */
+$('modes').addEventListener('click', e => {
+  const b = e.target.closest('[data-mode]');
+  if (!b) return;
+  modeKey = b.dataset.mode;
+  renderModes();
+});
+$('startBtn').onclick = $('againBtn').onclick = startGame;
+$('menuBtn').onclick = $('homeBtn').onclick = goMenu;
+$('openM').onclick = () => { renderMissions(); show('missionM', true); };
+$('openS').onclick = () => { renderShop(); show('shopM', true); };
+$('openG').onclick = $('gfxHudBtn').onclick = () => { renderGfx(); show('gfxM', true); };
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => show(b.dataset.close, false));
+$('skillBtn').onclick = useSkill;
+addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); useSkill(); } });
+$('sndBtn').onclick = () => { sound = !sound; $('sndBtn').textContent = sound ? '🔊' : '🔇'; };
+$('gfxList').onclick = e => {
+  const b = e.target.closest('[data-gfx]');
+  if (b) applyGfx(b.dataset.gfx);
+};
+$('shopList').onclick = e => {
+  const buy = e.target.closest('[data-buy]'), eq = e.target.closest('[data-equip]');
+  if (eq) { equipped = eq.dataset.equip; save(); renderShop(); }
+  else if (buy) {
+    const id = buy.dataset.buy, s = SLASHES[id];
+    if (gold >= s.price) { gold -= s.price; owned.push(id); equipped = id; save(); renderShop(); }
+    else { buy.textContent = 'Gold kurang!'; setTimeout(renderShop, 900); }
+  }
+};
+
+applyGfx(gfxKey);
+renderModes();
+showGold();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
